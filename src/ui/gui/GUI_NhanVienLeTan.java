@@ -1,11 +1,11 @@
 package ui.gui;
 // ---------------------------
 // Chú thích metadata (comment)
-// Người code: Cao Chí Quang
+// Người code: Nguyễn Phong Tuấn
 // Mô tả: Thêm nhãn chú thích hiển thị tên người chịu trách nhiệm / phần giao diện profile với dashboard, thanh menu, Panel đặt phòng
 // Mục đích: Quản lý code, dễ dàng liên hệ khi cần chỉnh sửa
-// Ngày tạo: 18/10/2025
-// Giờ tạo: 00:02
+// Ngày tạo: 19/10/2025
+// Giờ tạo: 20.19
 // Lưu ý: cập nhật thời gian/ người sửa khi chỉnh sửa tiếp
 // ---------------------------
 import javax.swing.*;
@@ -47,6 +47,7 @@ public class GUI_NhanVienLeTan extends JFrame {
     // Lưu lại các nút menu để đổi màu khi active
     private JButton btnDashboard;
     private JButton btnDatPhong;
+    private JButton btnKhachHang;
     // (Thêm các nút khác nếu cần)
 
     public GUI_NhanVienLeTan() {
@@ -67,10 +68,13 @@ public class GUI_NhanVienLeTan extends JFrame {
         // 3. Tạo các Panel nội dung riêng biệt (không chứa sidebar)
         PanelLeTanContent panelLeTanContent = new PanelLeTanContent();
         PanelDatPhongContent panelDatPhongContent = new PanelDatPhongContent();
+        PanelKhachHangContent panelKhachHangContent = new PanelKhachHangContent();
+
 
         // 4. Thêm các Panel nội dung vào CardLayout
         contentPanelContainer.add(panelLeTanContent, "LE_TAN_CONTENT");
         contentPanelContainer.add(panelDatPhongContent, "DAT_PHONG_CONTENT");
+        contentPanelContainer.add(panelKhachHangContent, "KHACH_HANG_CONTENT");
 
         // 5. Thêm Panel CardLayout vào CENTER của JFrame
         add(contentPanelContainer, BorderLayout.CENTER);
@@ -116,13 +120,14 @@ public class GUI_NhanVienLeTan extends JFrame {
         // Tạo các nút menu (lưu lại tham chiếu)
         btnDashboard = createNavButton("Dashboard");
         btnDatPhong = createNavButton("Đặt phòng");
-        JButton btnKhachHang = createNavButton("Khách hàng");
+        btnKhachHang = createNavButton("Khách hàng");
         JButton btnPhong = createNavButton("Phòng");
         JButton btnDichVu = createNavButton("Dịch vụ");
 
         // Gắn ActionListener để chuyển đổi content panel
         btnDashboard.addActionListener(e -> showContentPanel("LE_TAN_CONTENT"));
         btnDatPhong.addActionListener(e -> showContentPanel("DAT_PHONG_CONTENT"));
+        btnKhachHang.addActionListener(e -> showContentPanel("KHACH_HANG_CONTENT"));
         // (Thêm action listener cho các nút khác nếu bạn tạo panel tương ứng)
 
         // Thêm nút vào menu
@@ -193,7 +198,7 @@ public class GUI_NhanVienLeTan extends JFrame {
      * Helper: Đặt trạng thái active cho nút được chọn và reset các nút khác
      */
     private void setActiveButton(JButton activeButton) {
-        JButton[] allButtons = {btnDashboard, btnDatPhong /*, các nút khác */};
+        JButton[] allButtons = {btnDashboard, btnDatPhong, btnKhachHang /*, các nút khác */};
         for (JButton btn : allButtons) {
             if (btn == activeButton) {
                 btn.setForeground(Color.WHITE);
@@ -225,6 +230,8 @@ public class GUI_NhanVienLeTan extends JFrame {
             setActiveButton(btnDashboard);
         } else if (panelName.equals("DAT_PHONG_CONTENT")) {
             setActiveButton(btnDatPhong);
+        } else if (panelName.equals("KHACH_HANG_CONTENT")) {
+            setActiveButton(btnKhachHang);
         }
         // (Thêm else if cho các panel khác)
     }
@@ -935,6 +942,344 @@ class PanelDatPhongContent extends JPanel {
         bottomPanel.add(priceLabel, BorderLayout.CENTER);
         bottomPanel.add(selectButton, BorderLayout.EAST);
         card.add(bottomPanel, BorderLayout.SOUTH);
+
+        return card;
+    }
+}
+
+// =================================================================================
+// PANEL NỘI DUNG 3: KHÁCH HÀNG
+// =================================================================================
+class   PanelKhachHangContent extends JPanel {
+
+    public PanelKhachHangContent() {
+        setLayout(new BorderLayout());
+        setBackground(GUI_NhanVienLeTan.MAIN_BG);
+        setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        add(createHeader(), BorderLayout.NORTH);
+        add(createMainContent(), BorderLayout.CENTER);
+    }
+
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        JLabel title = new JLabel("Quản lý Khách hàng");
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        header.add(title, BorderLayout.WEST);
+        return header;
+    }
+
+    private JPanel createMainContent() {
+        JPanel content = new JPanel(new BorderLayout(0, 20));
+        content.setOpaque(false);
+
+        content.add(createCustomerListPanel(), BorderLayout.CENTER);
+        content.add(createSummarySection(), BorderLayout.SOUTH);
+
+        return content;
+    }
+
+    // ===== DANH SÁCH KHÁCH HÀNG =====
+    private JPanel createCustomerListPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 15));
+        panel.setOpaque(false);
+
+        panel.add(createSearchFilterPanel(), BorderLayout.NORTH);
+        panel.add(createCustomerScrollPanel(), BorderLayout.CENTER);
+
+        return panel;
+    }
+    // tìm kiếm
+    private JPanel createSearchFilterPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setOpaque(false);
+
+        JTextField searchField = new JTextField("");
+        String placeholder = " Tìm kiếm khách hàng...";
+        Color placeholderColor = Color.GRAY;
+        Color defaultColor = UIManager.getColor("TextField.foreground");
+
+        searchField.setText(placeholder);
+        searchField.setForeground(placeholderColor);
+
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals(placeholder)) {
+                    searchField.setText("");
+                    searchField.setForeground(defaultColor);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setText(placeholder);
+                    searchField.setForeground(placeholderColor);
+                }
+            }
+        });
+        searchField.setBorder(new CompoundBorder(
+                new LineBorder(GUI_NhanVienLeTan.CARD_BORDER),
+                new EmptyBorder(5, 8, 5, 8)
+        ));
+
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(new JComboBox<>(new String[]{"Tất cả", "Platinum", "Gold", "Silver", "Bronze", "Standard"}), BorderLayout.EAST);
+        searchPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        return searchPanel;
+    }
+
+    private JScrollPane createCustomerScrollPanel() {
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setOpaque(false);
+
+        // danh sách khách hang
+        listPanel.add(createCustomerCard("Nguyễn Văn Minh", "+84 (0) 123-456-789", "nguyen.van.minh@email.com",
+                "079123456789", "079123456789",12, "15/1/2024", "45.000.000 đ", "Gold", 4.8));
+        listPanel.add(Box.createVerticalStrut(10));
+        listPanel.add(createCustomerCard("Trần Thị Hương", "+84 (0) 987-654-321", "tran.thi.huong@email.com",
+                "079987654321", "079987654321",8, "10/1/2024", "28.000.000 đ", "Silver", 4.9));
+        listPanel.add(Box.createVerticalStrut(10));
+        listPanel.add(createCustomerCard("Lê Quang Hải", "+84 (0) 456-789-123", "le.quang.hai@email.com",
+                "079456789123", "079456789123",5, "20/12/2023", "12.000.000 đ", "Bronze", 4.5));
+        listPanel.add(Box.createVerticalStrut(10));
+        listPanel.add(createCustomerCard("Phạm Thị Lan", "+84 (0) 321-987-654", "pham.thi.lan@email.com",
+                "079321987654", "079321987654",15, "8/1/2024", "72.000.000 đ", "Platinum", 5.0));
+        listPanel.add(Box.createVerticalStrut(10));
+        listPanel.add(createCustomerCard("Võ Minh Tâm", "+84 (0) 789-123-456", "vo.minh.tam@email.com",
+                "079789123456", "079789123456",3, "15/10/2023", "9.000.000 đ", "Standard", 4.2));
+        JScrollPane scrollPane = new JScrollPane(listPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getViewport().setBackground(GUI_NhanVienLeTan.MAIN_BG);
+        scrollPane.setPreferredSize(new Dimension(0, 350)); // chỉ hiển thị khoảng 3 khách
+        scrollPane.getVerticalScrollBar().setUnitIncrement(15);
+        return scrollPane;
+    }
+
+    private JPanel createCustomerCard(String name, String phone, String email, String sdt, String cccd,
+                                      int stayCount, String lastStay, String totalSpend, String tier, double rating) {
+
+        // --- Card tổng ---
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.X_AXIS));
+        card.setBackground(GUI_NhanVienLeTan.COLOR_WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(GUI_NhanVienLeTan.CARD_BORDER),
+                new EmptyBorder(10, 15, 10, 15)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+
+        // ========== CỘT 1: AVATAR ==========
+        JPanel avatarPanel = new JPanel(new GridBagLayout()); // Dùng GridBag để căn giữa tuyệt đối
+        avatarPanel.setOpaque(false);
+        avatarPanel.setPreferredSize(new Dimension(60, 60)); // tạo khung cố định cho avatar
+        // vẽ avatar hình tròn
+        JLabel avatar = new JLabel(getInitials(name), SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int diameter = Math.min(getWidth(), getHeight());
+                g2.setColor(new Color(108, 99, 255));
+                g2.fillOval(0, 0, diameter, diameter);
+
+                // Vẽ chữ ở giữa
+                FontMetrics fm = g2.getFontMetrics(getFont());
+                int x = (diameter - fm.stringWidth(getText())) / 2;
+                int y = (diameter + fm.getAscent()) / 2 - 2;
+                g2.setColor(Color.WHITE);
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        avatar.setFont(new Font("SansSerif", Font.BOLD, 14));
+        avatar.setPreferredSize(new Dimension(45, 45));
+        avatar.setMinimumSize(new Dimension(45, 45));
+        avatar.setMaximumSize(new Dimension(45, 45));
+        avatar.setOpaque(false);
+
+        avatarPanel.add(avatar); // căn giữa avatar trong panel
+        card.add(avatarPanel);
+
+        // ========== CỘT 2: TÊN + SỐ ĐIỆN THOẠI ==========
+        JPanel infoPanel = new JPanel();
+        infoPanel.setOpaque(false);
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+
+        JLabel nameLabel = new JLabel(name);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JLabel phoneLabel = new JLabel(phone);
+        phoneLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        phoneLabel.setForeground(GUI_NhanVienLeTan.COLOR_TEXT_MUTED);
+
+        infoPanel.add(nameLabel);
+        infoPanel.add(phoneLabel);
+        infoPanel.setPreferredSize(new Dimension(180, 40));
+        card.add(infoPanel);
+
+        // ========== CỘT 3: EMAIL + CCCD ==========
+        card.add(createVerticalInfoPanel(email, cccd, 160));
+
+        // ========== CỘT 4: LƯU TRÚ + LẦN CUỐI ==========
+        card.add(createVerticalInfoPanel(stayCount + " lần lưu trú", "Lần cuối: " + lastStay, 130));
+
+        // ========== CỘT 5: CHI TIÊU + ĐÁNH GIÁ ==========
+        JLabel ratingLabel = new JLabel(
+                "<html><span style='color:#FFD700;font-size:13px;'>★</span> " + String.format("%.1f/5", rating) + "</html>"
+        );
+        card.add(createVerticalInfoPanel(totalSpend + " ₫", ratingLabel, 120));
+
+        // ========== CỘT 6: HẠNG VIP ==========
+        JLabel vipLabel = new JLabel(tier, SwingConstants.CENTER);
+        vipLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        vipLabel.setForeground(Color.WHITE);
+        vipLabel.setOpaque(true);
+        vipLabel.setBackground(getTierColor(tier));
+        vipLabel.setBorder(new EmptyBorder(4, 10, 4, 10));
+        vipLabel.setPreferredSize(new Dimension(80, 25));
+
+        JPanel vipPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
+        vipPanel.setOpaque(false);
+        vipPanel.add(vipLabel);
+        card.add(vipPanel);
+
+        // ========== CỘT 7: NÚT CHỨC NĂNG ==========
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 10));
+        right.setOpaque(false);
+
+        JButton edit = new JButton("✎");
+        JButton view = new JButton("👁");
+        JButton delete = new JButton("🗑");
+
+        edit.setForeground(Color.blue);
+        view.setForeground(new Color(0, 180, 0));
+        delete.setForeground(Color.red);
+
+        for (JButton b : new JButton[]{edit, view, delete}) {
+            b.setFocusPainted(false);
+            b.setBorderPainted(false);
+            b.setContentAreaFilled(false);
+            b.setFont(new Font("Segoe UI Emoji", Font.BOLD, 10));
+            b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        right.add(edit);
+        right.add(view);
+        right.add(delete);
+        card.add(right);
+
+        return card;
+    }
+    private JPanel createVerticalInfoPanel(Object top, Object bottom, int width) {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setOpaque(false);
+        p.setPreferredSize(new Dimension(width, 40));
+
+        if (top instanceof String s1)
+            p.add(new JLabel(s1));
+        else if (top instanceof JLabel l1)
+            p.add(l1);
+
+        if (bottom instanceof String s2)
+            p.add(new JLabel(s2));
+        else if (bottom instanceof JLabel l2)
+            p.add(l2);
+
+        return p;
+    }
+
+    private Color getTierColor(String tier) {
+        switch (tier) {
+            case "Platinum": return new Color(162, 126, 251);
+            case "Gold": return new Color(237, 207, 79, 239);
+            case "Silver": return new Color(177, 170, 170);
+            case "Bronze": return new Color(255, 191, 110);
+            case "Standard": return new Color(99, 132, 244);
+            default: return Color.GRAY;
+        }
+    }
+
+    private String getInitials(String name) {
+        String[] parts = name.split(" ");
+        String initials = "";
+        for (String p : parts) {
+            if (!p.isEmpty()) initials += p.charAt(0);
+        }
+        return initials.length() > 2 ? initials.substring(initials.length() - 2) : initials;
+    }
+
+    // ===== PHẦN THÊM KHÁCH HÀNG + TỔNG KẾT =====
+    private JPanel createSummarySection() {
+        JPanel container = new JPanel(new BorderLayout());
+        container.setOpaque(false);
+
+        // Tiêu đề + nút thêm
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        JLabel title = new JLabel("Thêm khách hàng mới");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        header.add(title, BorderLayout.WEST);
+
+        JButton btnAdd = new JButton("+ Thêm khách hàng");
+        btnAdd.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnAdd.setBackground(GUI_NhanVienLeTan.ACCENT_BLUE);
+        btnAdd.setForeground(Color.WHITE);
+        btnAdd.setBorderPainted(false);
+        btnAdd.setFocusPainted(false);
+        btnAdd.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAdd.setBorder(new EmptyBorder(8, 15, 8, 15));
+        header.add(btnAdd, BorderLayout.EAST);
+
+        container.add(header, BorderLayout.NORTH);
+
+        // Thẻ thống kê có cuộn
+        JScrollPane scrollSummary = new JScrollPane(createSummaryPanel());
+        scrollSummary.setBorder(null);
+        scrollSummary.setPreferredSize(new Dimension(0, 200));
+        scrollSummary.getViewport().setBackground(GUI_NhanVienLeTan.MAIN_BG);
+        scrollSummary.getVerticalScrollBar().setUnitIncrement(15);
+        container.add(scrollSummary, BorderLayout.CENTER);
+
+        return container;
+    }
+
+    private JPanel createSummaryPanel() {
+        JPanel summary = new JPanel(new GridLayout(2, 4, 15, 15));
+        summary.setOpaque(false);
+        summary.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        summary.add(createSummaryCard("5", "Khách hàng", GUI_NhanVienLeTan.ACCENT_BLUE));
+        summary.add(createSummaryCard("2", "VIP cao cấp", new Color(186, 85, 211)));
+        summary.add(createSummaryCard("166.000.000 đ", "Tổng chi tiêu", new Color(60, 179, 113)));
+        summary.add(createSummaryCard("4.7", "Đánh giá trung bình", new Color(255, 215, 0)));
+
+        summary.add(createSummaryCard("1", "Platinum", new Color(186, 85, 211)));
+        summary.add(createSummaryCard("1", "Gold", new Color(255, 191, 0)));
+        summary.add(createSummaryCard("1", "Silver", new Color(192, 192, 192)));
+        summary.add(createSummaryCard("1", "Bronze", new Color(205, 127, 50)));
+
+        return summary;
+    }
+
+    private JPanel createSummaryCard(String value, String label, Color color) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(GUI_NhanVienLeTan.COLOR_WHITE);
+        card.setBorder(new CompoundBorder(new LineBorder(color), new EmptyBorder(10, 10, 10, 10)));
+
+        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setForeground(color);
+
+        JLabel labelLabel = new JLabel(label, SwingConstants.CENTER);
+        labelLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        labelLabel.setForeground(Color.GRAY);
+
+        card.add(valueLabel, BorderLayout.CENTER);
+        card.add(labelLabel, BorderLayout.SOUTH);
 
         return card;
     }
