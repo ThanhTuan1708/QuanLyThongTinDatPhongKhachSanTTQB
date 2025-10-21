@@ -1,11 +1,11 @@
 package ui.gui;
 // ---------------------------
 // Chú thích metadata (comment)
-// Người code: Nguyễn Phong Tuấn
+// Người code: Đỗ Nguyễn Thanh Bình
 // Mô tả: Thêm nhãn chú thích hiển thị tên người chịu trách nhiệm / phần giao diện profile với dashboard, thanh menu, Panel đặt phòng
 // Mục đích: Quản lý code, dễ dàng liên hệ khi cần chỉnh sửa
-// Ngày tạo: 19/10/2025
-// Giờ tạo: 20.19
+// Ngày tạo: 21/10/2025
+// Giờ tạo: 09:26
 // Lưu ý: cập nhật thời gian/ người sửa khi chỉnh sửa tiếp
 // ---------------------------
 import javax.swing.*;
