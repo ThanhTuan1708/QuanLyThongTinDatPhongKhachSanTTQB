@@ -1284,3 +1284,249 @@ class   PanelKhachHangContent extends JPanel {
         return card;
     }
 }
+
+
+
+// =================================================================================
+// LỚP PanelDatPhongContent
+// =================================================================================
+class PanelDatPhongContent extends JPanel {
+
+    private final Color MAIN_BG = GUI_NhanVienLeTan.MAIN_BG;
+    private final Color ACCENT_BLUE = GUI_NhanVienLeTan.ACCENT_BLUE;
+    private final Color COLOR_WHITE = GUI_NhanVienLeTan.COLOR_WHITE;
+    private final Color CARD_BORDER = GUI_NhanVienLeTan.CARD_BORDER;
+
+    public PanelDatPhongContent() {
+        setLayout(new BorderLayout());
+        setBackground(MAIN_BG);
+        setBorder(new EmptyBorder(18, 18, 18, 18));
+
+        add(createHeader(), BorderLayout.NORTH);
+        add(createContent(), BorderLayout.CENTER);
+    }
+
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        JLabel title = new JLabel("Đặt phòng mới");
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        header.add(title, BorderLayout.WEST);
+        return header;
+    }
+
+    private JPanel createContent() {
+        JPanel content = new JPanel(new BorderLayout(15, 0));
+        content.setOpaque(false);
+
+        JPanel leftPanel = createFormPanel();
+        leftPanel.setPreferredSize(new Dimension(400, 0));
+        content.add(leftPanel, BorderLayout.WEST);
+
+        JPanel centerPanel = createRoomSelectionWrapper();
+        content.add(centerPanel, BorderLayout.CENTER);
+
+        return content;
+    }
+
+    private JPanel createFormPanel() {
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(COLOR_WHITE);
+        formPanel.setBorder(new CompoundBorder(
+                new LineBorder(CARD_BORDER),
+                new EmptyBorder(15, 15, 15, 15)));
+
+        JLabel title = new JLabel("Thông tin khách hàng");
+        title.setFont(new Font("SansSerif", Font.BOLD, 16));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(title);
+        formPanel.add(Box.createVerticalStrut(15));
+
+        formPanel.add(createInputField("Họ và Tên", new JTextField()));
+        formPanel.add(createInputField("CCCD/Passport", new JTextField()));
+        formPanel.add(createInputField("Số điện thoại", new JTextField()));
+        formPanel.add(createInputField("Email", new JTextField()));
+        formPanel.add(createInputField("Địa chỉ", new JTextField()));
+        formPanel.add(createComboBoxField("Loại khách", new JComboBox<>(new String[] { "Nội địa", "Quốc tế" })));
+        formPanel.add(createComboBoxField("Quốc tịch", new JComboBox<>(new String[] { "Việt Nam", "Mỹ", "Khác" })));
+
+        formPanel.add(Box.createVerticalStrut(20));
+
+        JLabel title2 = new JLabel("Thông tin đặt phòng");
+        title2.setFont(new Font("SansSerif", Font.BOLD, 16));
+        title2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(title2);
+        formPanel.add(Box.createVerticalStrut(15));
+
+        formPanel.add(createInputField("Ngày nhận phòng", new JTextField()));
+        formPanel.add(createInputField("Ngày trả phòng", new JTextField()));
+        formPanel.add(createInputField("Số người", new JTextField()));
+        formPanel.add(createInputField("Ghi chú", new JTextField()));
+
+        formPanel.add(Box.createVerticalGlue());
+
+        JButton btnDatPhong = new JButton("Xác nhận Đặt phòng");
+        btnDatPhong.setBackground(ACCENT_BLUE);
+        btnDatPhong.setForeground(COLOR_WHITE);
+        btnDatPhong.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnDatPhong.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnDatPhong.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(Box.createVerticalStrut(10));
+        formPanel.add(btnDatPhong);
+
+        return formPanel;
+    }
+
+    private JPanel createInputField(String label, JTextField field) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lbl.setForeground(GUI_NhanVienLeTan.COLOR_TEXT_MUTED);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        field.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 30));
+        field.setBorder(new CompoundBorder(
+                new LineBorder(CARD_BORDER, 1),
+                new EmptyBorder(5, 8, 5, 8)));
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        panel.add(lbl);
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(field);
+        panel.add(Box.createVerticalStrut(10));
+
+        return panel;
+    }
+
+    private JPanel createComboBoxField(String label, JComboBox<String> comboBox) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lbl.setForeground(GUI_NhanVienLeTan.COLOR_TEXT_MUTED);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        comboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        comboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        comboBox.setPreferredSize(new Dimension(Integer.MAX_VALUE, 30));
+        comboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        panel.add(lbl);
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(comboBox);
+        panel.add(Box.createVerticalStrut(10));
+
+        return panel;
+    }
+
+    private JPanel createRoomSelectionWrapper() {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBackground(COLOR_WHITE);
+        wrapper.setBorder(new CompoundBorder(
+                new LineBorder(CARD_BORDER),
+                new EmptyBorder(15, 15, 15, 15)));
+
+        JLabel title = new JLabel("Chọn phòng trống");
+        title.setFont(new Font("SansSerif", Font.BOLD, 16));
+        wrapper.add(title, BorderLayout.NORTH);
+
+        JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        filters.setOpaque(false);
+        filters.add(new JComboBox<>(new String[] { "Tất cả loại phòng", "Tiêu chuẩn", "Suite" }));
+        filters.add(new JComboBox<>(new String[] { "Tất cả sức chứa", "2 người", "4 người" }));
+        filters.add(new JComboBox<>(new String[] { "Tất cả giá", "1M - 2M", "2M - 4M" }));
+        wrapper.add(filters, BorderLayout.CENTER);
+
+        JScrollPane roomScroll = createRoomSelectionPanel();
+        wrapper.add(roomScroll, BorderLayout.SOUTH);
+
+        return wrapper;
+    }
+
+    private JScrollPane createRoomSelectionPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        String[][] roomData = {
+                { "101", "Tiêu chuẩn", "30m²", "2 người", "1.200.000 ₫" },
+                { "102", "Tiêu chuẩn", "30m²", "2 người", "1.200.000 ₫" },
+                { "203", "View biển", "39m²", "3 người", "3.500.000 ₫" },
+                { "405", "Suite gia đình", "70m²", "6 người", "4.500.000 ₫" },
+                { "504", "Suite cao cấp", "51m²", "4 người", "2.750.000 ₫" },
+        };
+
+        for (String[] data : roomData) {
+            panel.add(createRoomCard(data[0], data[1], data[2], data[3], data[4]));
+            panel.add(Box.createVerticalStrut(10));
+        }
+
+        JScrollPane scroll = new JScrollPane(panel);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(COLOR_WHITE);
+        scroll.setPreferredSize(new Dimension(Integer.MAX_VALUE, 400));
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        return scroll;
+    }
+
+    private JPanel createRoomCard(String soPhong, String loaiPhong, String dienTich, String sucChua, String gia) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(new Color(245, 245, 255));
+        card.setBorder(new CompoundBorder(
+                new LineBorder(new Color(200, 210, 255)),
+                new EmptyBorder(10, 10, 10, 10)));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+
+        // LEFT: Room Info
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        left.setOpaque(false);
+        left.add(createVerticalInfoPanel("Phòng " + soPhong, loaiPhong, 100));
+        left.add(createVerticalInfoPanel("DT: " + dienTich, "SC: " + sucChua, 120));
+        left.add(createVerticalInfoPanel(gia, "Giá/Đêm", 120));
+        card.add(left, BorderLayout.WEST);
+
+        // RIGHT: Action
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        right.setOpaque(false);
+        JButton btnChon = new JButton("Chọn");
+        btnChon.setBackground(GUI_NhanVienLeTan.COLOR_GREEN);
+        btnChon.setForeground(COLOR_WHITE);
+        btnChon.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btnChon.setPreferredSize(new Dimension(80, 40));
+        right.add(btnChon);
+        card.add(right, BorderLayout.EAST);
+
+        return card;
+    }
+
+    private JPanel createVerticalInfoPanel(String top, String bottom, int width) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(width, 60));
+        JLabel topLabel = new JLabel(top);
+        topLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        JLabel bottomLabel = new JLabel(bottom);
+        bottomLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        bottomLabel.setForeground(Color.GRAY);
+        panel.add(topLabel);
+        panel.add(bottomLabel);
+        return panel;
+    }
+}
+
+
