@@ -1511,7 +1511,6 @@ class PanelDatPhongContent extends JPanel {
                 new EmptyBorder(10, 10, 10, 10)));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        // LEFT: Room Info
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
         left.add(createVerticalInfoPanel("Phòng " + soPhong, loaiPhong, 100));
@@ -1519,7 +1518,6 @@ class PanelDatPhongContent extends JPanel {
         left.add(createVerticalInfoPanel(gia, "Giá/Đêm", 120));
         card.add(left, BorderLayout.WEST);
 
-        // RIGHT: Action
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         right.setOpaque(false);
         JButton btnChon = new JButton("Chọn");
