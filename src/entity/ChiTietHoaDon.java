@@ -1,3 +1,9 @@
+/**
+ * Author: ThanhTuan
+ * Date: 2025-10-23
+ * Description: Entity Chi tiet hoa don
+ */
+
 package entity;
 
 public class ChiTietHoaDon {

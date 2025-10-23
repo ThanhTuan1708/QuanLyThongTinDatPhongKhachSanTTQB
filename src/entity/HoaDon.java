@@ -6,8 +6,8 @@ import java.util.List;
 
 public class HoaDon {
     private String maHD;
-    private String maDatPhong; // thay bằng đối tượng DatPhong nếu đã có entity
-    private String maNV;       // hoặc NhanVien object
+    private String maDatPhong; 
+    private String maNV;       
     private LocalDateTime ngayLap;
     private double tongTien;
     private boolean thanhToan;

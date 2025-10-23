@@ -1,3 +1,9 @@
+/**
+ * Author: ThanhTuan
+ * Date: 2025-10-23
+ * Description: Giao dien quan ly khach san cho nhan vien quan ly
+ */
+
 package ui.gui;
 
 import javax.swing.*;
