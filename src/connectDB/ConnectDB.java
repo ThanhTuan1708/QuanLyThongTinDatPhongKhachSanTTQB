@@ -7,7 +7,7 @@ import java.sql.SQLException;
 public class ConnectDB {
     private static Connection con = null;
     private static final ConnectDB instance = new ConnectDB();
-    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=";
+    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyKhachSan";
     private static final String USER = "sa";
     private static final String PASSWORD = "sapassword";
 

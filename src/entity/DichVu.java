@@ -1,3 +1,9 @@
+/**
+ * Author: ThanhTuan
+ * Date: 2025-10-23
+ * Description: Entity Dich Vu
+ */
+
 package entity;
 
 public class DichVu {

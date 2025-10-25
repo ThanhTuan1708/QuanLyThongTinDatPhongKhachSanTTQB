@@ -1,3 +1,9 @@
+/**
+ * Author: ThanhTuan
+ * Date: 2025-10-23
+ * Description: Entity Nhan Vien
+ */
+
 package entity;
 
 import java.time.LocalDate;
