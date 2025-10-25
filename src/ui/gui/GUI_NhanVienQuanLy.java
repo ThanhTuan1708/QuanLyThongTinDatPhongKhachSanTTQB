@@ -5,13 +5,14 @@
  */
 
 package ui.gui;
+
 // ---------------------------
 // Chú thích metadata (comment)
-// Người code: Đỗ Nguyễn Thanh Bình
+// Người code: Phan Minh Thuận
 // Mô tả: Thêm nhãn chú thích hiển thị tên người chịu trách nhiệm / phần giao diện thống kê
 // Mục đích: Quản lý code, dễ dàng liên hệ khi cần chỉnh sửa
-// Ngày tạo: 25/10/2025
-// Giờ tạo: 17:37PM
+// Ngày tạo: 26/10/2025
+// Giờ tạo: 1:52AM
 // Lưu ý: cập nhật thời gian/ người sửa khi chỉnh sửa tiếp
 // ---------------------------
 import javax.swing.*;
@@ -31,6 +32,7 @@ import static ui.gui.PanelThongKeContent.CARD_BORDER;
 import static ui.gui.PanelThongKeContent.MAIN_BG;
 import static ui.gui.PanelThongKeContent.COLOR_GREEN;
 import static ui.gui.PanelThongKeContent.COLOR_PURPLE;
+import static ui.gui.PanelThongKeContent.COLOR_RED;
 
 /**
  * Giao diện Dashboard cho Nhân viên Quản lý
@@ -45,6 +47,7 @@ public class GUI_NhanVienQuanLy extends JFrame {
     private static final String DASHBOARD_PANEL = "QUAN_LY_CONTENT";
     private static final String EMPLOYEE_PANEL = "NHAN_VIEN_CONTENT";
     private static final String STATISTIC_PANEL = "THONG_KE_CONTENT";
+    private static final String PROMOTION_PANEL = "KHUYEN_MAI_CONTENT";
 
     // CardLayout để chuyển nội dung bên phải
     private CardLayout cardLayout;
@@ -54,6 +57,7 @@ public class GUI_NhanVienQuanLy extends JFrame {
     private JButton btnNhanVien;
     private JButton btnDashboard;
     private JButton btnThongKe;
+    private JButton btnKhuyenMai;
 
     public GUI_NhanVienQuanLy() {
         setTitle("Dashboard Quản lý khách sạn");
@@ -74,11 +78,13 @@ public class GUI_NhanVienQuanLy extends JFrame {
         PanelQuanLyContent panelQuanLyContent = new PanelQuanLyContent();
         PanelNhanVienContent panelNhanVienContent = new PanelNhanVienContent();
         PanelThongKeContent panelThongKeContent = new PanelThongKeContent(); // Thêm Panel Thống kê
+        PanelKhuyenMaiContent panelKhuyenMaiContent = new PanelKhuyenMaiContent(); // Thêm Panel Khuyến mãi
 
         // 4. Thêm các Panel nội dung vào CardLayout
         contentPanelContainer.add(panelQuanLyContent, DASHBOARD_PANEL);
         contentPanelContainer.add(panelNhanVienContent, EMPLOYEE_PANEL);
         contentPanelContainer.add(panelThongKeContent, STATISTIC_PANEL); // Thêm Panel Thống kê
+        contentPanelContainer.add(panelKhuyenMaiContent, PROMOTION_PANEL); // Thêm Panel Khuyến mãi
 
         // 5. Thêm Panel CardLayout vào CENTER của JFrame
         add(contentPanelContainer, BorderLayout.CENTER);
@@ -120,12 +126,13 @@ public class GUI_NhanVienQuanLy extends JFrame {
         btnDashboard = createNavButton("Dashboard");
         btnNhanVien = createNavButton("Nhân viên");
         btnThongKe = createNavButton("Thống kê"); // Lưu tham chiếu
-        JButton btnKhuyenMai = createNavButton("Khuyến mãi");
+        btnKhuyenMai = createNavButton("Khuyến mãi");
 
         // Gắn ActionListener để chuyển đổi content panel
         btnDashboard.addActionListener(e -> showContentPanel(DASHBOARD_PANEL));
         btnNhanVien.addActionListener(e -> showContentPanel(EMPLOYEE_PANEL));
         btnThongKe.addActionListener(e -> showContentPanel(STATISTIC_PANEL)); // Action cho Thống kê
+        btnKhuyenMai.addActionListener(e -> showContentPanel(PROMOTION_PANEL)); // Action Khuyến mãi
 
         // Thêm nút vào menu
         menu.add(btnDashboard);
@@ -135,6 +142,7 @@ public class GUI_NhanVienQuanLy extends JFrame {
         menu.add(btnThongKe);
         menu.add(Box.createVerticalStrut(8));
         menu.add(btnKhuyenMai);
+        menu.add(Box.createVerticalStrut(8));
 
         JPanel menuWrap = new JPanel(new BorderLayout());
         menuWrap.setOpaque(false);
@@ -179,7 +187,7 @@ public class GUI_NhanVienQuanLy extends JFrame {
      * Helper: Đặt trạng thái active cho nút được chọn và reset các nút khác
      */
     private void setActiveButton(JButton activeButton) {
-        JButton[] allButtons = { btnDashboard, btnNhanVien, btnThongKe /* , các nút khác */ };
+        JButton[] allButtons = { btnDashboard, btnNhanVien, btnThongKe, btnKhuyenMai /* , các nút khác */ };
         for (JButton btn : allButtons) {
             if (btn == activeButton) {
                 btn.setForeground(Color.WHITE);
@@ -210,7 +218,10 @@ public class GUI_NhanVienQuanLy extends JFrame {
             setActiveButton(btnNhanVien);
         } else if (panelName.equals(STATISTIC_PANEL)) { // Kích hoạt nút Thống kê
             setActiveButton(btnThongKe);
+        } else if (panelName.equals(PROMOTION_PANEL)) { // Kích hoạt nút Khuyến mãi
+            setActiveButton(btnKhuyenMai);
         }
+
     }
 
     public static void main(String[] args) {
@@ -998,7 +1009,241 @@ class PanelNhanVienContent extends JPanel {
 }
 
 // =================================================================================
-// PANEL NỘI DUNG 4: THỐNG KÊ & BÁO CÁO (GUI_ThongKeBaoCao cũ)
+// PANEL NỘI DUNG 4: QUẢN LÝ KHUYẾN MÃI
+// =================================================================================
+
+// Lớp giao diện quản lý khuyến mãi, kế thừa từ JPanel
+class PanelKhuyenMaiContent extends JPanel {
+
+    // Constructor khởi tạo giao diện
+    public PanelKhuyenMaiContent() {
+        setLayout(new BorderLayout(15, 15)); // bố cục chính: header ở trên, nội dung ở giữa
+        setBackground(MAIN_BG); // màu nền chính
+        setBorder(new EmptyBorder(15, 15, 15, 15)); // khoảng cách viền
+
+        add(createHeader(), BorderLayout.NORTH); // thêm tiêu đề ở trên
+        add(createMainContent(), BorderLayout.CENTER); // thêm nội dung chính ở giữa
+    }
+
+    // Tạo phần tiêu đề gồm tên trang và nút "Thêm khuyến mãi"
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false); // không tô nền
+
+        JLabel title = new JLabel("Quản lý Khuyến mãi"); // tiêu đề
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        header.add(title, BorderLayout.WEST); // đặt tiêu đề bên trái
+
+        JButton btnAdd = new JButton("Thêm khuyến mãi"); // nút thêm
+        btnAdd.setBackground(ACCENT_BLUE);
+        btnAdd.setForeground(Color.WHITE);
+        btnAdd.setBorder(new EmptyBorder(6, 12, 6, 12));
+        btnAdd.setFocusPainted(false);
+        btnAdd.setBorderPainted(false);
+        btnAdd.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        header.add(btnAdd, BorderLayout.EAST); // đặt nút bên phải
+
+        return header;
+    }
+
+    // Tạo phần nội dung chính gồm: tìm kiếm → bảng → thống kê → thẻ
+    private JPanel createMainContent() {
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS)); // bố cục dọc
+        content.setOpaque(false);
+
+        content.add(createSearchPanel()); // thanh tìm kiếm
+        content.add(Box.createVerticalStrut(10)); // khoảng cách
+        content.add(createPromotionTable()); // bảng khuyến mãi
+        content.add(Box.createVerticalStrut(10));
+        content.add(createSummaryStats()); // thống kê
+        content.add(Box.createVerticalStrut(10));
+        content.add(createPromotionCards()); // thẻ khuyến mãi
+
+        return content;
+    }
+
+    // Tạo thanh tìm kiếm gồm ô nhập và nút "Tìm"
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        searchPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44)); // chiều cao cố định
+
+        JTextField searchField = new JTextField(); // ô nhập tìm kiếm
+        searchField.setPreferredSize(new Dimension(600, 36)); // chiều rộng
+        String placeholder = "Tìm kiếm theo mã, tên khuyến mãi, trạng thái...";
+        Color placeholderColor = Color.GRAY;
+        Color defaultColor = UIManager.getColor("TextField.foreground");
+
+        // Thiết lập placeholder
+        searchField.setText(placeholder);
+        searchField.setForeground(placeholderColor);
+
+        // Xử lý focus để hiển thị/xóa placeholder
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals(placeholder)) {
+                    searchField.setText("");
+                    searchField.setForeground(defaultColor);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setText(placeholder);
+                    searchField.setForeground(placeholderColor);
+                }
+            }
+        });
+
+        // Viền ô nhập
+        searchField.setBorder(new CompoundBorder(
+                new LineBorder(CARD_BORDER),
+                new EmptyBorder(6, 8, 6, 8)));
+
+        searchPanel.add(searchField, BorderLayout.CENTER); // đặt ô nhập ở giữa
+
+        JButton btnSearch = new JButton("Tìm"); // nút tìm kiếm
+        btnSearch.setPreferredSize(new Dimension(100, 36));
+        btnSearch.setBackground(ACCENT_BLUE);
+        btnSearch.setForeground(Color.WHITE);
+        btnSearch.setFocusPainted(false);
+        btnSearch.setBorderPainted(false);
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        searchPanel.add(btnSearch, BorderLayout.EAST); // đặt nút bên phải
+
+        return searchPanel;
+    }
+
+    // Tạo bảng danh sách khuyến mãi
+    private JScrollPane createPromotionTable() {
+        String[] columns = { "Tên khuyến mãi", "Giảm giá", "Thời gian", "Trạng thái" };
+        Object[][] data = {
+                { "KM hè 2024", "20%", "15/5 - 30/6", "Đang hoạt động" },
+                { "KM hè 2024", "20%", "15/5 - 30/6", "Đang hoạt động" },
+                { "KM hè 2024 dành cho VENDORS", "15%", "15/5 - 30/6", "Đang hoạt động" },
+                { "KM VIP", "50%", "15/5 - 30/6", "Đã hết hạn" }
+        };
+
+        // Model bảng không cho sửa dữ liệu
+        DefaultTableModel model = new DefaultTableModel(data, columns) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.setRowHeight(36);
+        table.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 13));
+        table.setFillsViewportHeight(true);
+
+        // TODO: Thêm renderer trạng thái ở đây nếu cần tô màu
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createTitledBorder("Danh sách khuyến mãi"));
+        return scroll;
+    }
+
+    // Tạo phần thống kê tổng quan
+    private JPanel createSummaryStats() {
+        JPanel stats = new JPanel(new GridLayout(1, 4, 15, 0)); // 4 cột
+        stats.setOpaque(false);
+
+        stats.add(createStatCard("4", "Khuyến mãi", COLOR_PURPLE));
+        stats.add(createStatCard("3", "Đang áp dụng", COLOR_GREEN));
+        stats.add(createStatCard("902", "Lượt sử dụng", new Color(255, 200, 0)));
+        stats.add(createStatCard("1", "Đã hết hạn", COLOR_RED));
+
+        return stats;
+    }
+
+    // Tạo từng ô thống kê
+    private JPanel createStatCard(String value, String label, Color color) {
+        // Tạo panel với bố cục BorderLayout để chia thành phần giữa và dưới
+        JPanel card = new JPanel(new BorderLayout()); // Đặt màu nền trắng cho ô thống kê
+        card.setBackground(Color.WHITE); // Đặt viền: đường viền màu CARD_BORDER + khoảng cách bên trong (padding)
+        card.setBorder(new CompoundBorder(new LineBorder(CARD_BORDER), new EmptyBorder(12, 18, 12, 18))); // viền ngoài
+                                                                                                          // + padding:
+                                                                                                          // trên, trái,
+                                                                                                          // dưới, phải
+
+        // Tạo label hiển thị giá trị thống kê (ví dụ: "4")
+        JLabel val = new JLabel(value, SwingConstants.CENTER); // căn giữa ngang
+        val.setFont(new Font("SansSerif", Font.BOLD, 18)); // chữ đậm, cỡ lớn
+        val.setForeground(color); // màu chữ theo loại thống kê
+
+        // Tạo label hiển thị tên thống kê (ví dụ: "Khuyến mãi")
+        JLabel lab = new JLabel(label, SwingConstants.CENTER);
+        lab.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lab.setForeground(Color.GRAY);
+
+        card.add(val, BorderLayout.CENTER); // Thêm label giá trị vào giữa ô
+        card.add(lab, BorderLayout.SOUTH); // Thêm label mô tả vào phía dưới ô
+
+        return card;
+    }
+
+    // Tạo các thẻ khuyến mãi
+    private JPanel createPromotionCards() {
+        JPanel cards = new JPanel(new GridLayout(1, 4, 15, 0)); // 4 thẻ
+        cards.setOpaque(false);
+
+        cards.add(createPromoCard("SUMMER24", "20%", "15/5 - 30/6"));
+        cards.add(createPromoCard("WED2024", "500.000đ", "15/5 - 30/6"));
+        cards.add(createPromoCard("VENDOR24", "15%", "15/5 - 30/6"));
+        cards.add(createPromoCard("VIP", "50%", "15/5 - 30/6"));
+
+        return cards;
+    }
+
+    // Tạo một thẻ khuyến mãi hiển thị mã, giảm giá và thời gian áp dụng
+    private JPanel createPromoCard(String code, String discount, String time) {
+        JPanel card = new JPanel(); // Tạo panel chứa nội dung thẻ
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS)); // Đặt layout theo chiều dọc (BoxLayout Y_AXIS)
+        card.setBackground(Color.WHITE); // Đặt màu nền trắng cho thẻ
+        card.setBorder(new CompoundBorder(new LineBorder(CARD_BORDER), new EmptyBorder(12, 12, 12, 12))); // Đặt viền
+                                                                                                          // ngoài:
+                                                                                                          // đường viền
+                                                                                                          // màu
+                                                                                                          // CARD_BORDER
+                                                                                                          // + khoảng
+                                                                                                          // cách bên
+                                                                                                          // trong 12px
+
+        // Tạo label hiển thị mã khuyến mãi (ví dụ: "SUMMER24")
+        JLabel lblCode = new JLabel(code);
+        lblCode.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblCode.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Tạo label hiển thị mức giảm giá (ví dụ: "Giảm giá: 20%")
+        JLabel lblDiscount = new JLabel("Giảm giá: " + discount);
+        lblDiscount.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        lblDiscount.setForeground(Color.GRAY);
+        lblDiscount.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Tạo label hiển thị thời gian áp dụng (ví dụ: "Thời gian: 15/5 - 30/6")
+        JLabel lblTime = new JLabel("Thời gian: " + time);
+        lblTime.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblTime.setForeground(Color.GRAY);
+        lblTime.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Thêm các label vào panel theo thứ tự: mã → giảm giá → thời gian
+        card.add(lblCode);
+        card.add(Box.createVerticalStrut(6));
+        card.add(lblDiscount);
+        card.add(lblTime);
+
+        return card;
+    }
+}
+
+// =================================================================================
+// PANEL NỘI DUNG 5: THỐNG KÊ & BÁO CÁO (GUI_ThongKeBaoCao cũ)
 // =================================================================================
 
 class PanelThongKeContent extends JPanel {
