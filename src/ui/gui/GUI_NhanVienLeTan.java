@@ -25,7 +25,20 @@ import java.time.DayOfWeek;
 // LỚP CHÍNH (JFrame) - CHỨA SIDEBAR CỐ ĐỊNH VÀ CARDLAYOUT CHO NỘI DUNG
 // =================================================================================
 public class GUI_NhanVienLeTan extends JFrame {
+    private String maNV;
+    // Nếu chưa có, thêm constructor nhận maNV
+    public GUI_NhanVienLeTan(String maNV) {
+        this(); // gọi constructor mặc định nếu có (nếu không có, bỏ dòng này và khởi tạo UI tại đây)
+        this.maNV = maNV;
+        initAfterLogin();
+    }
 
+    private void initAfterLogin() {
+        if (maNV != null) {
+            setTitle(getTitle() + " - " + maNV);
+        }
+        // ...các xử lý khác theo role...
+    }
     // --- Các hằng số màu sắc ---
     public static final Color SIDEBAR_BG = new Color(240, 248, 255);
     public static final Color MAIN_BG = new Color(242, 245, 250);

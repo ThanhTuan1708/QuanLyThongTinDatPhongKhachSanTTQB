@@ -31,6 +31,11 @@ public class KhachHang {
         this.quocTich = quocTich;
     }
 
+    public KhachHang(String string, String string2, String string3, Object object, String string4, String string5,
+            String string6, String string7) {
+        //TODO Auto-generated constructor stub
+    }
+
     // Getters and Setters
     public String getMaKH() {
         return maKH;
@@ -100,5 +105,10 @@ public class KhachHang {
     public String toString() {
         return "KhachHang [maKH=" + maKH + ", tenKH=" + tenKH + ", soDT=" + soDT + ", email=" + email + ", diaChi="
                 + diaChi + ", CCCD=" + CCCD + ", gioiTinh=" + gioiTinh + ", quocTich=" + quocTich + "]";
+    }
+
+    public String getHoTen() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getHoTen'");
     }
 }
