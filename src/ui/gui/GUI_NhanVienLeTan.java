@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Properties;
+import java.util.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.DayOfWeek;
@@ -771,9 +772,15 @@ class PanelDatPhongContent extends JPanel {
         danhSachPhongDaChon = new ArrayList<>();
         danhSachDichVuDaChon = new ArrayList<>();
         
-        // Load dữ liệu
+        // Thiết lập layout và background
+        setLayout(new BorderLayout());
+        setBackground(GUI_NhanVienLeTan.MAIN_BG);
+        setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        // Load dữ liệu và hiển thị UI
         loadDanhSachPhong();
         loadDanhSachDichVu();
+        loadLatestBookings(); // Load và hiển thị danh sách booking ngay từ đầu
     }
 
     private void loadDanhSachDichVu() {
@@ -837,6 +844,8 @@ class PanelDatPhongContent extends JPanel {
         }
     }
 
+    
+
     private void refreshUI() {
         removeAll();
         
@@ -845,14 +854,46 @@ class PanelDatPhongContent extends JPanel {
         setBackground(GUI_NhanVienLeTan.MAIN_BG);
         setBorder(new EmptyBorder(15, 15, 15, 15)); 
 
-        // --- Thêm các panel ---
-        add(createHeader(), BorderLayout.NORTH);
-        add(createMainContent(), BorderLayout.CENTER);
+        // --- Tạo panel chính chứa tất cả nội dung ---
+        JPanel mainContentPanel = new JPanel(new BorderLayout(0, 20));
+        mainContentPanel.setOpaque(false);
+
+        // Header
+        mainContentPanel.add(createHeader(), BorderLayout.NORTH);
+
+        // Panel chứa cả booking list và room selection
+        JPanel contentWrapper = new JPanel(new BorderLayout(0, 20));
+        contentWrapper.setOpaque(false);
+
+        // Phần trên: Booking list
+        JPanel bookingPanel = new JPanel(new BorderLayout());
+        bookingPanel.setOpaque(false);
+        bookingPanel.setPreferredSize(new Dimension(0, 300)); // Chiều cao cố định
+        
+        // Thêm thanh tìm kiếm và bộ lọc
+        bookingPanel.add(createSearchFilterPanel(), BorderLayout.NORTH);
+        
+        // Load và thêm danh sách booking
+        JScrollPane bookingList = loadLatestBookings();
+        bookingPanel.add(bookingList, BorderLayout.CENTER);
+
+        // Phần dưới: Room selection
+        JPanel roomSelectionPanel = createRoomSelectionPanel();
+
+        // Thêm vào content wrapper
+        contentWrapper.add(bookingPanel, BorderLayout.NORTH);
+        contentWrapper.add(roomSelectionPanel, BorderLayout.CENTER);
+
+        // Thêm content wrapper vào main panel
+        mainContentPanel.add(contentWrapper, BorderLayout.CENTER);
 
         // Thêm panel thanh toán nếu có phòng được chọn
         if (!danhSachPhongDaChon.isEmpty()) {
-            add(createCheckoutPanel(), BorderLayout.SOUTH);
+            mainContentPanel.add(createCheckoutPanel(), BorderLayout.SOUTH);
         }
+
+        // Thêm tất cả vào panel chính
+        add(mainContentPanel);
 
         // Cập nhật giao diện
         revalidate();
@@ -1098,32 +1139,53 @@ class PanelDatPhongContent extends JPanel {
             
             try {
                 Connection conn = ConnectDB.getInstance().getConnection();
-                String sql = "SELECT * FROM KhuyenMai WHERE maKhuyenMai = ? AND GETDATE() BETWEEN ngayBatDau AND ngayKetThuc";
+                String sql = "SELECT * FROM KhuyenMai WHERE maKhuyenMai = ? AND ? BETWEEN ngayBatDau AND ngayKetThuc";
                 
                 try (PreparedStatement pst = conn.prepareStatement(sql)) {
                     pst.setString(1, code);
+                    // Sử dụng ngày hiện tại từ Java
+                    java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+                    pst.setDate(2, currentDate);
+                    
                     try (ResultSet rs = pst.executeQuery()) {
                         if (rs.next()) {
-                            // Khuyến mãi hợp lệ
-                            khuyenMaiDangDung = new KhuyenMai(
-                                rs.getString("maKhuyenMai"),
-                                rs.getString("tenKhuyenMai"),
-                                rs.getDouble("chietKhau"),
-                                rs.getDate("ngayBatDau"),
-                                rs.getDate("ngayKetThuc"),
-                                rs.getString("moTa")
-                            );
+                            // Lấy các ngày từ database
+                            java.sql.Date startDate = rs.getDate("ngayBatDau");
+                            java.sql.Date endDate = rs.getDate("ngayKetThuc");
+
+                            // In thông tin debug
+                            System.out.println("Mã KM: " + rs.getString("maKhuyenMai"));
+                            System.out.println("Ngày bắt đầu: " + startDate);
+                            System.out.println("Ngày kết thúc: " + endDate);
+                            System.out.println("Ngày hiện tại: " + currentDate);
                             
-                            // Tính lại tổng tiền với khuyến mãi
-                            tinhTongTien();
-                            
-                            JOptionPane.showMessageDialog(this,
-                                String.format("Đã áp dụng mã giảm giá: %.1f%%\nTổng tiền sau giảm: %,.0f đ",
-                                khuyenMaiDangDung.getChietKhau(), tongTienSauGiam),
-                                "Thành công",
-                                JOptionPane.INFORMATION_MESSAGE);
+                            // Kiểm tra ngày một lần nữa để đảm bảo
+                            if (currentDate.compareTo(startDate) >= 0 && currentDate.compareTo(endDate) <= 0) {
+                                // Khuyến mãi hợp lệ
+                                khuyenMaiDangDung = new KhuyenMai(
+                                    rs.getString("maKhuyenMai"),
+                                    rs.getString("tenKhuyenMai"),
+                                    rs.getDouble("chietKhau"),
+                                    startDate,
+                                    endDate,
+                                    rs.getString("moTa")
+                                );
+                                
+                                // Tính lại tổng tiền với khuyến mãi
+                                tinhTongTien();
+                                
+                                JOptionPane.showMessageDialog(this,
+                                    String.format("Đã áp dụng mã giảm giá: %.1f%%\nTổng tiền sau giảm: %,.0f đ",
+                                    khuyenMaiDangDung.getChietKhau(), tongTienSauGiam),
+                                    "Thành công",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                showErrorMessage("Mã khuyến mãi đã hết hạn!");
+                                khuyenMaiDangDung = null;
+                                tinhTongTien();
+                            }
                         } else {
-                            showErrorMessage("Mã khuyến mãi không hợp lệ hoặc đã hết hạn!");
+                            showErrorMessage("Mã khuyến mãi không tồn tại!");
                             khuyenMaiDangDung = null;
                             tinhTongTien();
                         }
@@ -1203,6 +1265,9 @@ class PanelDatPhongContent extends JPanel {
         // Xử lý sự kiện nút
         cancelButton.addActionListener(e -> bookingDialog.dispose());
         confirmButton.addActionListener(e -> {
+            // Disable the confirm button to prevent double booking
+            confirmButton.setEnabled(false);
+            
             // Lưu thông tin đặt phòng vào database (sử dụng text fields cho ngày để tránh phụ thuộc thư viện bên ngoài)
             try {
                 int soKhach = Integer.parseInt(guestField.getText().trim());
@@ -1243,8 +1308,7 @@ class PanelDatPhongContent extends JPanel {
         if (promoCode != null && !promoCode.trim().isEmpty() && !promoCode.equals("NHẬP MÃ KHUYẾN MÃI")) {
             try {
                 Connection conn = ConnectDB.getInstance().getConnection();
-                // Truy vấn không kiểm tra ngày để debug
-                String sql = "SELECT maKhuyenMai, tenKhuyenMai, chietKhau, ngayBatDau, ngayKetThuc FROM KhuyenMai WHERE maKhuyenMai = ?";
+                String sql = "SELECT maKhuyenMai, tenKhuyenMai, chietKhau, ngayBatDau, ngayKetThuc FROM KhuyenMai WHERE maKhuyenMai = ? AND GETDATE() BETWEEN ngayBatDau AND ngayKetThuc";
                 
                 try (PreparedStatement pst = conn.prepareStatement(sql)) {
                     pst.setString(1, promoCode.trim());
@@ -1271,6 +1335,7 @@ class PanelDatPhongContent extends JPanel {
                 return;
             }
         }
+        
         // Validate required fields
         if (!validateBookingInput(name, email, phone, checkIn, checkOut)) {
             return;
@@ -1289,7 +1354,6 @@ class PanelDatPhongContent extends JPanel {
         Connection conn = null;
         String maKH = null;
 
-        
         try {
             // Get connection and start transaction
             conn = ConnectDB.getInstance().getConnection();
@@ -1299,16 +1363,92 @@ class PanelDatPhongContent extends JPanel {
             maKH = generateUniqueId("KH");
             String maHoaDon = generateUniqueId("HD");
 
-            // Execute booking process
-            double chietKhau = executeBookingProcess(conn, maKH, maHoaDon, name, email, phone,
-                                                   guestCount, checkIn, checkOut, promoCode);
+            // 1. Create or update customer
+            createOrUpdateCustomer(conn, maKH, name, phone, email);
+
+            // 2. Create invoice
+            String sqlHoaDon = """
+                INSERT INTO HoaDon (maHoaDon, ngayLap, maKH, maKhuyenMai, tongTien)
+                VALUES (?, GETDATE(), (SELECT maKH FROM KhachHang WHERE sdt = ?), ?, ?)
+                """;
+            try (PreparedStatement pstHoaDon = conn.prepareStatement(sqlHoaDon)) {
+                pstHoaDon.setString(1, maHoaDon);
+                pstHoaDon.setString(2, phone);
+                pstHoaDon.setString(3, khuyenMaiDangDung != null ? khuyenMaiDangDung.getMaKhuyenMai() : null);
+                double totalBeforeDiscount = tongTienPhong + tongTienDichVu;
+                pstHoaDon.setDouble(4, totalBeforeDiscount); // Tổng tiền trước giảm
+                pstHoaDon.executeUpdate();
+            }
+
+            // 3. Add booking details for each room
+            String sqlChiTiet = """
+                INSERT INTO ChiTietHoaDon_Phong (maHoaDon, maPhong, ngayNhanPhong, ngayTraPhong)
+                VALUES (?, ?, ?, ?)
+                """;
+            try (PreparedStatement pstChiTiet = conn.prepareStatement(sqlChiTiet)) {
+                for (Phong phong : danhSachPhongDaChon) {
+                    pstChiTiet.setString(1, maHoaDon);
+                    pstChiTiet.setString(2, phong.getMaPhong());
+                    pstChiTiet.setString(3, checkIn);
+                    pstChiTiet.setString(4, checkOut);
+                    pstChiTiet.executeUpdate();
+
+                    // Update room status to 'ĐÃ XÁC NHẬN'
+                    String sqlUpdateRoom = """
+                        UPDATE Phong 
+                        SET maTrangThai = (SELECT maTrangThai FROM TrangThaiPhong WHERE tenTrangThai = 'ĐÃ XÁC NHẬN')
+                        WHERE maPhong = ?
+                        """;
+                    try (PreparedStatement pstUpdateRoom = conn.prepareStatement(sqlUpdateRoom)) {
+                        pstUpdateRoom.setString(1, phong.getMaPhong());
+                        pstUpdateRoom.executeUpdate();
+                    }
+                }
+            }
+
+            // 4. Add services if any are selected
+            if (!danhSachDichVuDaChon.isEmpty()) {
+                String sqlDichVu = "INSERT INTO ChiTietHoaDon_DichVu (maHoaDon, maDichVu, soLuong) VALUES (?, ?, ?)";
+                try (PreparedStatement pstDichVu = conn.prepareStatement(sqlDichVu)) {
+                    for (DichVu dichVu : danhSachDichVuDaChon) {
+                        pstDichVu.setString(1, maHoaDon);
+                        pstDichVu.setString(2, dichVu.getMaDichVu());
+                        pstDichVu.setInt(3, 1); // Default quantity
+                        pstDichVu.executeUpdate();
+                    }
+                }
+            }
 
             // If everything is successful, commit the transaction
             conn.commit();
 
-            // Show success message and reset UI
-            showBookingSuccessMessage(maHoaDon, chietKhau);
-            resetBookingState();
+            // Show success message
+            showBookingSuccessMessage(maHoaDon, khuyenMaiDangDung != null ? khuyenMaiDangDung.getChietKhau() : 0);
+            
+            // Reset UI and booking state first
+            danhSachPhongDaChon.clear();
+            danhSachDichVuDaChon.clear();
+            khuyenMaiDangDung = null;
+            tongTienPhong = 0;
+            tongTienDichVu = 0;
+            chietKhau = 0;
+            tongTienSauGiam = 0;
+            
+            // Reload the room list and booking list
+            loadDanhSachPhong();
+            refreshUI();
+            
+            // Force repaint the booking list
+            revalidate();
+            repaint();
+            
+            // Update the parent panel if needed
+            Container parent = getParent();
+            while (parent != null) {
+                parent.revalidate();
+                parent.repaint();
+                parent = parent.getParent();
+            }
 
         } catch (SQLException e) {
             handleBookingError(conn, e);
@@ -1361,25 +1501,38 @@ class PanelDatPhongContent extends JPanel {
         try {
             Connection conn = ConnectDB.getInstance().getConnection();
             // Chỉ lấy các cột cần thiết
-            String sql = "SELECT maKhuyenMai, tenKhuyenMai, chietKhau FROM KhuyenMai WHERE maKhuyenMai = ?";
-            
-            try (PreparedStatement pst = conn.prepareStatement(sql)) {
-                pst.setString(1, code.trim());
-                try (ResultSet rs = pst.executeQuery()) {
-                    if (rs.next()) {
-                        double chietKhau = rs.getDouble("chietKhau");
-                        khuyenMaiDangDung = new KhuyenMai(
-                            rs.getString("maKhuyenMai"),
-                            rs.getString("tenKhuyenMai"), 
-                            chietKhau,
-                            new java.sql.Date(System.currentTimeMillis()), // Ngày hiện tại 
-                            new java.sql.Date(System.currentTimeMillis()), // Ngày hiện tại
-                            "Mã khuyến mãi");
-                        
-                        tinhTongTien(); // Tính lại tổng tiền với khuyến mãi
-                        double tienGiam = (tongTienPhong + tongTienDichVu) * (chietKhau / 100.0);
-                        
-                        JOptionPane.showMessageDialog(this,
+                String sql = "SELECT maKhuyenMai, tenKhuyenMai, chietKhau, ngayBatDau, ngayKetThuc FROM KhuyenMai " +
+                          "WHERE maKhuyenMai = ? AND ? BETWEEN ngayBatDau AND ngayKetThuc";
+                
+                try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                    pst.setString(1, code.trim());
+                    java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+                    pst.setDate(2, currentDate);
+
+                    try (ResultSet rs = pst.executeQuery()) {
+                        if (rs.next()) {
+                            java.sql.Date ngayBatDau = rs.getDate("ngayBatDau");
+                            java.sql.Date ngayKetThuc = rs.getDate("ngayKetThuc");
+                            double chietKhau = rs.getDouble("chietKhau");
+
+                            // In thông tin debug
+                            System.out.println("Mã KM: " + rs.getString("maKhuyenMai"));
+                            System.out.println("Ngày hiện tại: " + currentDate);
+                            System.out.println("Ngày bắt đầu: " + ngayBatDau);
+                            System.out.println("Ngày kết thúc: " + ngayKetThuc);
+                            System.out.println("Chiết khấu: " + chietKhau);
+
+                            khuyenMaiDangDung = new KhuyenMai(
+                                rs.getString("maKhuyenMai"),
+                                rs.getString("tenKhuyenMai"),
+                                chietKhau,
+                                ngayBatDau,
+                                ngayKetThuc,
+                                "Mã khuyến mãi"
+                            );
+
+                            tinhTongTien(); // Tính lại tổng tiền với khuyến mãi
+                            double tienGiam = (tongTienPhong + tongTienDichVu) * (chietKhau / 100.0);                        JOptionPane.showMessageDialog(this,
                             String.format("Áp dụng mã giảm giá thành công!\n" +
                                         "Chiết khấu: %.1f%%\n" +
                                         "Số tiền giảm: %,.0f đ\n" + 
@@ -1450,20 +1603,45 @@ class PanelDatPhongContent extends JPanel {
 
     private void createOrUpdateCustomer(Connection conn, String maKH, String name, 
                                       String phone, String email) throws SQLException {
-        String sql = "MERGE INTO KhachHang AS target " +
-                    "USING (SELECT ? as sdt) AS source " +
-                    "ON target.sdt = source.sdt " +
-                    "WHEN NOT MATCHED THEN " +
-                    "   INSERT (maKH, hoTen, sdt, email) " +
-                    "   VALUES (?, ?, ?, ?);";
-                    
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, phone);
-            pst.setString(2, maKH);
-            pst.setString(3, name);
-            pst.setString(4, phone);
-            pst.setString(5, email);
-            pst.executeUpdate();
+        // Kiểm tra xem khách hàng đã tồn tại chưa
+        String checkSql = "SELECT maKH FROM KhachHang WHERE sdt = ?";
+        String existingMaKH = null;
+        
+        try (PreparedStatement checkPst = conn.prepareStatement(checkSql)) {
+            checkPst.setString(1, phone);
+            try (ResultSet rs = checkPst.executeQuery()) {
+                if (rs.next()) {
+                    existingMaKH = rs.getString("maKH");
+                }
+            }
+        }
+        
+        if (existingMaKH != null) {
+            // Update if customer exists
+            String updateSql = """
+                UPDATE KhachHang 
+                SET hoTen = ?, email = ?
+                WHERE sdt = ?
+            """;
+            try (PreparedStatement pst = conn.prepareStatement(updateSql)) {
+                pst.setString(1, name);
+                pst.setString(2, email);
+                pst.setString(3, phone);
+                pst.executeUpdate();
+            }
+        } else {
+            // Insert if customer doesn't exist
+            String insertSql = """
+                INSERT INTO KhachHang (maKH, hoTen, sdt, email, gioiTinh, ngaySinh, cccd, diaChi)
+                VALUES (?, ?, ?, ?, N'Không xác định', NULL, NULL, N'Chưa cập nhật')
+            """;
+            try (PreparedStatement pst = conn.prepareStatement(insertSql)) {
+                pst.setString(1, maKH);
+                pst.setString(2, name);
+                pst.setString(3, phone);
+                pst.setString(4, email);
+                pst.executeUpdate();
+            }
         }
     }
 
@@ -1564,6 +1742,7 @@ class PanelDatPhongContent extends JPanel {
     }
 
     private void resetBookingState() {
+        // Clear all booking-related data
         danhSachPhongDaChon.clear();
         danhSachDichVuDaChon.clear();
         khuyenMaiDangDung = null;
@@ -1571,90 +1750,218 @@ class PanelDatPhongContent extends JPanel {
         tongTienDichVu = 0;
         chietKhau = 0;
         tongTienSauGiam = 0;
-        loadDanhSachPhong();
-        loadLatestBookings(); // Load lại danh sách booking mới nhất
+        
+        // Reload data and update UI
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Reload room list
+                loadDanhSachPhong();
+                
+                // Reload booking list and refresh UI
+                refreshUI();
+                
+                // Force immediate repaint
+                revalidate();
+                repaint();
+                
+                // Update parent containers
+                Container parent = getParent();
+                while (parent != null) {
+                    parent.revalidate();
+                    parent.repaint();
+                    parent = parent.getParent();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showErrorMessage("Lỗi khi làm mới giao diện: " + ex.getMessage());
+            }
+        });
     }
 
-    private void loadLatestBookings() {
+    private JScrollPane loadLatestBookings() {
+        // Panel chính chứa danh sách booking cards
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setOpaque(false);
+
         try {
-            Connection conn = ConnectDB.getInstance().getConnection();
+            // Truy vấn SQL để lấy dữ liệu đặt phòng
             String sql = """
                 SELECT DISTINCT 
-                    kh.hoTen, 
+                    kh.maKH,
+                    kh.hoTen,
                     kh.sdt,
+                    kh.email,
+                    kh.gioiTinh,
+                    kh.ngaySinh,
+                    kh.cccd,
+                    kh.diaChi,
                     p.maPhong,
                     lp.tenLoaiPhong,
+                    h.maHoaDon,
                     h.ngayLap,
+                    cthp.ngayNhanPhong,
+                    cthp.ngayTraPhong,
                     p.giaTienMotDem,
-                    tp.tenTrangThai
+                    tp.tenTrangThai,
+                    h.tongTien,
+                    CASE 
+                        WHEN km.chietKhau IS NOT NULL 
+                        THEN h.tongTien * (1 - km.chietKhau/100.0)
+                        ELSE h.tongTien
+                    END as thanhTienSauGiam,
+                    ISNULL(km.chietKhau, 0) as chietKhau,
+                    h.maKhuyenMai
                 FROM HoaDon h
                 JOIN KhachHang kh ON h.maKH = kh.maKH
-                JOIN ChiTietHoaDon_Phong ct ON h.maHoaDon = ct.maHoaDon
-                JOIN Phong p ON ct.maPhong = p.maPhong
+                JOIN ChiTietHoaDon_Phong cthp ON h.maHoaDon = cthp.maHoaDon  
+                JOIN Phong p ON cthp.maPhong = p.maPhong
                 JOIN LoaiPhong lp ON p.maLoaiPhong = lp.maLoaiPhong
                 JOIN TrangThaiPhong tp ON p.maTrangThai = tp.maTrangThai
-                WHERE h.ngayLap >= DATEADD(day, -1, GETDATE())
-                ORDER BY h.ngayLap DESC
+                LEFT JOIN KhuyenMai km ON h.maKhuyenMai = km.maKhuyenMai
+                WHERE h.ngayLap >= DATEADD(day, -7, GETDATE())  
+                ORDER BY h.ngayLap DESC, cthp.ngayNhanPhong ASC
             """;
 
-            try (PreparedStatement pst = conn.prepareStatement(sql);
+            try (Connection conn = ConnectDB.getInstance().getConnection();
+                 PreparedStatement pst = conn.prepareStatement(sql);
                  ResultSet rs = pst.executeQuery()) {
 
-                JPanel mainPanel = createBookingsListPanel();
-                JPanel listPanel = new JPanel();
-                listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-                listPanel.setOpaque(false);
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
                 while (rs.next()) {
-                    String hoTen = rs.getString("hoTen");
-                    String sdt = rs.getString("sdt"); 
-                    String maPhong = rs.getString("maPhong");
-                    String loaiPhong = rs.getString("tenLoaiPhong");
-                    java.sql.Timestamp ngayLap = rs.getTimestamp("ngayLap");
-                    double giaTienMotDem = rs.getDouble("giaTienMotDem");
-                    String trangThai = rs.getString("tenTrangThai");
+                    // Lấy thông tin từ ResultSet
+                    String name = rs.getString("hoTen");
+                    String phone = rs.getString("sdt"); 
+                    String roomNum = rs.getString("maPhong");
+                    String roomType = rs.getString("tenLoaiPhong");
+                    String maHoaDon = rs.getString("maHoaDon");
+                    
+                    // Xử lý ngày và giờ đặt phòng
+                    String bookingDate = "Chưa có";
+                    if (rs.getTimestamp("ngayLap") != null) {
+                        Date ngayLap = rs.getTimestamp("ngayLap");
+                        bookingDate = dateFormat.format(ngayLap) + " " + timeFormat.format(ngayLap);
+                    }
+                    
+                    // Xử lý thời gian lưu trú
+                    String duration = "Chưa xác định";
+                    Date checkIn = rs.getDate("ngayNhanPhong");
+                    Date checkOut = rs.getDate("ngayTraPhong");
+                    if (checkIn != null && checkOut != null) {
+                        long diffTime = checkOut.getTime() - checkIn.getTime();
+                        long nights = diffTime / (24 * 60 * 60 * 1000);
+                        if (nights >= 0) {
+                            duration = nights + " đêm";
+                        }
+                    }
 
-                    // Format date
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-                    String ngayDat = dateFormat.format(ngayLap);
+                    // Lấy thông tin giá và chiết khấu
+                    double roomPrice = rs.getDouble("giaTienMotDem");
+                    double tongTien = rs.getDouble("tongTien");
+                    double chietKhau = rs.getDouble("chietKhau");
+                    String maKhuyenMai = rs.getString("maKhuyenMai");
+                    
+                    String price = String.format("%,.0f đ", roomPrice);
+                    String totalPrice = String.format("%,.0f đ", tongTien);
+                    String discountInfo = maKhuyenMai != null ? 
+                        String.format("Giảm giá %.1f%% (Mã: %s)", chietKhau, maKhuyenMai) : 
+                        "Không áp dụng giảm giá";
+                    
+                    String status = rs.getString("tenTrangThai");
 
-                    // Create booking card
-                    JPanel bookingCard = createBookingCard(
-                        hoTen, 
-                        sdt,
-                        maPhong,
-                        loaiPhong,
-                        ngayDat,
-                        "1 đêm", // Default duration
-                        String.format("%,.0f đ", giaTienMotDem),
-                        getTrangThaiInt(trangThai)
+                    // Tạo thẻ booking và thêm vào panel
+                    JPanel card = createBookingCard(
+                        name, phone, roomNum, roomType,
+                        bookingDate, duration, price,
+                        getTrangThaiInt(status)
                     );
-
-                    listPanel.add(bookingCard);
-                    listPanel.add(Box.createVerticalStrut(10));
-                }
-
-                // Replace old content with new list
-                if (mainPanel != null) {
-                    mainPanel.removeAll();
-                    mainPanel.add(listPanel);
-                    mainPanel.revalidate();
-                    mainPanel.repaint();
+                    
+                    if (card != null) {
+                        // Thêm thông tin chi tiết vào card
+                        JPanel detailPanel = new JPanel(new GridLayout(4, 1, 5, 2));
+                        detailPanel.setOpaque(false);
+                        detailPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
+                        
+                        JLabel lblMaHD = new JLabel("Mã HD: " + maHoaDon);
+                        lblMaHD.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                        
+                        JLabel lblTongTien = new JLabel("Tổng tiền: " + totalPrice);
+                        lblTongTien.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                        
+                        JLabel lblGiamGia = new JLabel(discountInfo);
+                        lblGiamGia.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+                        lblGiamGia.setForeground(new Color(50, 150, 50));
+                        
+                        // Thêm thông tin khách hàng chi tiết
+                        String gioiTinh = rs.getString("gioiTinh");
+                        Date ngaySinh = rs.getDate("ngaySinh");
+                        String cccd = rs.getString("cccd");
+                        String diaChi = rs.getString("diaChi");
+                        
+                        JLabel lblInfo = new JLabel(String.format("<html>%s • %s • %s</html>", 
+                            gioiTinh != null ? gioiTinh : "Không xác định",
+                            ngaySinh != null ? dateFormat.format(ngaySinh) : "Chưa có ngày sinh",
+                            cccd != null ? cccd : "Chưa có CCCD"));
+                        lblInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                        lblInfo.setForeground(Color.GRAY);
+                        
+                        detailPanel.add(lblMaHD);
+                        detailPanel.add(lblTongTien);
+                        detailPanel.add(lblGiamGia);
+                        detailPanel.add(lblInfo);
+                        
+                        // Thêm panel chi tiết vào card
+                        JPanel cardContent = new JPanel(new BorderLayout());
+                        cardContent.setOpaque(false);
+                        cardContent.add(detailPanel, BorderLayout.SOUTH);
+                        card.add(cardContent, BorderLayout.SOUTH);
+                        
+                        listPanel.add(card);
+                        listPanel.add(Box.createVerticalStrut(10));
+                    }
                 }
             }
+            
+            // Tạo ScrollPane và cấu hình
+            JScrollPane scrollPane = new JScrollPane(listPanel);
+            scrollPane.setBorder(null);
+            scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+            scrollPane.getViewport().setOpaque(false);
+            
+            return scrollPane;
+
         } catch (SQLException e) {
             e.printStackTrace();
             showErrorMessage("Lỗi khi tải danh sách đặt phòng: " + e.getMessage());
+            
+            // Tạo ScrollPane trống trong trường hợp lỗi
+            JPanel emptyPanel = new JPanel();
+            emptyPanel.setLayout(new BoxLayout(emptyPanel, BoxLayout.Y_AXIS));
+            emptyPanel.setOpaque(false);
+            
+            JScrollPane emptyScrollPane = new JScrollPane(emptyPanel);
+            emptyScrollPane.setBorder(null);
+            emptyScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+            emptyScrollPane.getViewport().setOpaque(false);
+            
+            return emptyScrollPane;
         }
     }
+    
 
     private int getTrangThaiInt(String trangThai) {
-        return switch (trangThai) {
-            case "ĐÃ XÁC NHẬN" -> 1;
-            case "ĐANG SỬ DỤNG" -> 2;
-            case "ĐÃ TRẢ PHÒNG" -> 3;
-            default -> 0;
-        };
+        switch (trangThai) {
+            case "ĐÃ XÁC NHẬN":
+                return 1;
+            case "ĐANG SỬ DỤNG":
+                return 2; 
+            case "ĐÃ TRẢ PHÒNG":
+                return 3;
+            default:
+                return 0;
+        }
     }
 
     private void showErrorMessage(String message) {
@@ -1876,18 +2183,23 @@ class PanelDatPhongContent extends JPanel {
 
     // Nội dung chính
     private JPanel createMainContent() {
-        // Content chứa 2 khu vực chính: Danh sách đặt phòng và Chọn phòng
-        JPanel content = new JPanel(new BorderLayout(0, 25)); 
-        content.setOpaque(false); 
-        content.setBorder(new EmptyBorder(0, 5, 5, 5)); 
+        // Panel chứa cả booking list và room selection
+        JPanel contentWrapper = new JPanel(new BorderLayout(0, 20));
+        contentWrapper.setOpaque(false);
+        contentWrapper.setBorder(new EmptyBorder(0, 5, 5, 5));
 
-        // Phần 1: Danh sách đặt phòng (NORTH)
-        content.add(createBookingsListPanel(), BorderLayout.NORTH);
+        // Phần trên: Booking list
+        JPanel bookingPanel = new JPanel(new BorderLayout());
+        bookingPanel.setOpaque(false);
+        bookingPanel.setPreferredSize(new Dimension(0, 300)); // Chiều cao cố định
+        bookingPanel.add(createSearchFilterPanel(), BorderLayout.NORTH);
+        bookingPanel.add(loadLatestBookings(), BorderLayout.CENTER);
+        contentWrapper.add(bookingPanel, BorderLayout.NORTH);
 
-        // Phần 2: Chọn phòng để đặt (CENTER)
-        content.add(createRoomSelectionPanel(), BorderLayout.CENTER);
+        // Phần dưới: Room selection
+        contentWrapper.add(createRoomSelectionPanel(), BorderLayout.CENTER);
 
-        return content;
+        return contentWrapper;
     }
 
     private JPanel createSearchFilterPanel() {
@@ -1964,16 +2276,38 @@ class PanelDatPhongContent extends JPanel {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
         mainPanel.setOpaque(false);
         mainPanel.add(createSearchFilterPanel(), BorderLayout.NORTH);
-        mainPanel.add(createCardListPanel(), BorderLayout.CENTER);
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
-        wrapper.add(mainPanel, BorderLayout.NORTH);
-        return wrapper;
+        JScrollPane scrollPane = new JScrollPane();
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        return mainPanel;
     }
 
-    private JPanel createBookingCard(String name, String phone, String roomNum, String roomType, String date,
-            String duration, String price, int status) {
+    private void showBookingDetails(String name, String phone, String roomNum, 
+                                  String roomType, String bookingDate,
+                                  String duration, String price) {
+        // Display booking details in a dialog or panel
+        String message = String.format("""
+            Chi tiết đặt phòng:
+            Khách hàng: %s
+            Số điện thoại: %s 
+            Phòng: %s - %s
+            Ngày đặt: %s
+            Thời gian: %s
+            Giá: %s/đêm""",
+            name, phone, roomNum, roomType, 
+            bookingDate, duration, price);
+            
+        JOptionPane.showMessageDialog(this,
+            message,
+            "Chi tiết đặt phòng",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private JPanel createBookingCard(String name, String phone, String roomNum, String roomType, 
+            String bookingDate, String duration, String price, int status) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.X_AXIS));
         card.setBackground(GUI_NhanVienLeTan.COLOR_WHITE);
@@ -1983,54 +2317,68 @@ class PanelDatPhongContent extends JPanel {
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // Thông tin khách hàng và phòng
         card.add(createVerticalInfoPanel(name, phone, 180));
         card.add(Box.createHorizontalStrut(10));
         card.add(createVerticalInfoPanel(roomNum, roomType, 120));
         card.add(Box.createHorizontalStrut(10));
-        card.add(createVerticalInfoPanel(date, duration, 120));
+        card.add(createVerticalInfoPanel(bookingDate, duration, 120));
         card.add(Box.createHorizontalStrut(10));
-        card.add(createVerticalInfoPanel(price, "250.000 đ/đêm", 120));
+        card.add(createVerticalInfoPanel(price, "/ đêm", 120));
         card.add(Box.createHorizontalGlue());
 
+        // Trạng thái và nút hành động
+        JPanel statusAndActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        statusAndActions.setOpaque(false);
+
         JLabel statusLabel = new JLabel();
-        JButton actionButton = new JButton();
-        actionButton.setFont(new Font("SansSerif", Font.BOLD, 12));
-        actionButton.setFocusPainted(false);
-        actionButton.setBorderPainted(false);
-        actionButton.setOpaque(true);
-        actionButton.setContentAreaFilled(true);
-        actionButton.setForeground(GUI_NhanVienLeTan.COLOR_WHITE);
+        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
 
-        Color buttonColor;
-
-        // Logic hiển thị trạng thái và nút hành động
-        if (status == 1) {
-            statusLabel.setText("Đã xác nhận");
-            statusLabel.setForeground(GUI_NhanVienLeTan.COLOR_GREEN);
-            actionButton.setText("In");
-            actionButton.setBackground(GUI_NhanVienLeTan.COLOR_GREEN);
-            buttonColor = GUI_NhanVienLeTan.COLOR_GREEN;
-        } else {
-            statusLabel.setText("Đã nhận phòng");
-            statusLabel.setForeground(GUI_NhanVienLeTan.COLOR_ORANGE);
-            actionButton.setText("Out");
-            actionButton.setBackground(GUI_NhanVienLeTan.COLOR_ORANGE);
-            buttonColor = GUI_NhanVienLeTan.COLOR_ORANGE;
+        switch (status) {
+            case 1:
+                statusLabel.setText("ĐÃ XÁC NHẬN");
+                statusLabel.setForeground(GUI_NhanVienLeTan.STATUS_GREEN_FG);
+                statusLabel.setBackground(GUI_NhanVienLeTan.STATUS_GREEN_BG);
+                break;
+            case 2:
+                statusLabel.setText("ĐANG SỬ DỤNG");
+                statusLabel.setForeground(GUI_NhanVienLeTan.STATUS_YELLOW_FG);
+                statusLabel.setBackground(GUI_NhanVienLeTan.STATUS_YELLOW_BG);
+                break;
+            case 3:
+                statusLabel.setText("ĐÃ TRẢ PHÒNG");
+                statusLabel.setForeground(GUI_NhanVienLeTan.STATUS_ORANGE_FG);
+                statusLabel.setBackground(GUI_NhanVienLeTan.STATUS_ORANGE_BG);
+                break;
+            default:
+                statusLabel.setText("KHÔNG XÁC ĐỊNH");
+                statusLabel.setForeground(GUI_NhanVienLeTan.STATUS_RED_FG);
+                statusLabel.setBackground(GUI_NhanVienLeTan.STATUS_RED_BG);
         }
 
-        Border lineBorder = new LineBorder(buttonColor.darker(), 1);
-        Border paddingBorder = new EmptyBorder(5, 15, 5, 15);
-        actionButton.setBorder(new CompoundBorder(lineBorder, paddingBorder));
+        statusLabel.setOpaque(true);
+        statusLabel.setBorder(new EmptyBorder(4, 8, 4, 8));
+        statusAndActions.add(statusLabel);
+        
+        card.add(statusAndActions);
 
-        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-        card.add(statusLabel);
-        card.add(Box.createHorizontalStrut(15));
-        card.add(actionButton);
-        card.add(Box.createHorizontalStrut(5));
+        // Thêm hover effect
+        card.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                card.setBackground(new Color(248, 249, 250));
+            }
 
-        JButton etcButton = new JButton("...");
-        etcButton.setFocusPainted(false);
-        card.add(etcButton);
+            @Override
+            public void mouseExited(MouseEvent e) {
+                card.setBackground(GUI_NhanVienLeTan.COLOR_WHITE);
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                showBookingDetails(name, phone, roomNum, roomType, bookingDate, duration, price);
+            }
+        });
 
         return card;
     }
@@ -2704,15 +3052,12 @@ class PanelPhongContent extends JPanel {
         // Khởi tạo PhongDAO và lấy danh sách phòng
         phongDAO = new PhongDAO();
         loadDanhSachPhong();
-
-        add(createHeader(), BorderLayout.NORTH);
-        add(createMainContent(), BorderLayout.CENTER);
+        refreshUI(); // Cập nhật giao diện sau khi load dữ liệu
     }
 
     private void loadDanhSachPhong() {
         try {
             danhSachPhong = phongDAO.getAll();
-            refreshUI(); // Cập nhật giao diện sau khi tải dữ liệu mới
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
@@ -2723,12 +3068,25 @@ class PanelPhongContent extends JPanel {
     }
 
     private void refreshUI() {
-        // Xóa và tạo lại toàn bộ nội dung
         removeAll();
-        add(createHeader(), BorderLayout.NORTH);
-        add(createMainContent(), BorderLayout.CENTER);
         
-        // Cập nhật giao diện
+        // Thiết lập cho JPanel này
+        setLayout(new BorderLayout());
+        setBackground(GUI_NhanVienLeTan.MAIN_BG);
+        setBorder(new EmptyBorder(15, 15, 15, 15)); 
+
+        // Tạo panel chính chứa tất cả nội dung
+        JPanel mainContentPanel = new JPanel(new BorderLayout(0, 20));
+        mainContentPanel.setOpaque(false);
+
+        // Header
+        mainContentPanel.add(createHeader(), BorderLayout.NORTH);
+
+        // Nội dung chính
+        mainContentPanel.add(createMainContent(), BorderLayout.CENTER);
+
+        // Thêm vào panel chính và cập nhật giao diện
+        add(mainContentPanel);
         revalidate();
         repaint();
     }
@@ -3175,6 +3533,25 @@ class PanelPhongContent extends JPanel {
                     JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+
+
+    private JPanel createDetailRow(String label, String value) {
+        JPanel row = new JPanel(new BorderLayout(10, 5));
+        row.setOpaque(false);
+        row.setBorder(new EmptyBorder(5, 10, 5, 10));
+
+        JLabel lblLabel = new JLabel(label);
+        lblLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        row.add(lblLabel, BorderLayout.WEST);
+        row.add(lblValue, BorderLayout.CENTER);
+        
+        return row;
     }
 
     private JPanel createSchemaCard(String num, String type, String capacity, String price, Color color) {
